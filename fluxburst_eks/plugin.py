@@ -29,10 +29,6 @@ class BurstParameters:
     It should be possible to read this in from yaml, or the
     environment (or both).
     """
-
-    # Google Cloud Project
-    project: str
-
     # Lead broker service hostname or ip address
     lead_host: str
 
@@ -59,7 +55,7 @@ class BurstParameters:
     curve_cert: Optional[str] = "/mnt/curve/curve.cert"
 
     cluster_name: Optional[str] = "flux-bursted-cluster"
-    machine_type: Optional[str] = "c2-standard-8"
+    machine_type: Optional[str] = "m4.large"
     cpu_limit: Optional[int] = None
     memory_limit: Optional[int] = None
 
