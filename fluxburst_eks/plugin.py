@@ -81,7 +81,7 @@ class BurstParameters:
     wrap: Optional[str] = None
 
 
-class FluxBurstAWS(plugins.BurstPlugin):
+class FluxBurstEKS(plugins.BurstPlugin):
     # Set our custom dataclass, otherwise empty
     _param_dataclass = BurstParameters
 
