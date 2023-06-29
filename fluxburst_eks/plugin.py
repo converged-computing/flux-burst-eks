@@ -99,6 +99,9 @@ class FluxBurstEKS(plugins.BurstPlugin):
         This function should also consider logic for deciding if/when to
         assign clusters, but run should actually create/destroy.
         """
+        print('SCHEDULE')
+        import IPython
+        IPython.embed()
         # We cannot run any jobs without credentials
         for cred in ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY']:
             if cred not in os.environ:
