@@ -15,6 +15,7 @@ class ResourceEstimator:
 
     Given a spec for an instance, do a basic "optimization" or matching.
     """
+
     def __init__(self, project, **kwargs):
         self.regions = kwargs.get("regions") or ["us-east1", "us-west1", "us-central1"]
         self.project = None

@@ -29,6 +29,7 @@ class BurstParameters:
     It should be possible to read this in from yaml, or the
     environment (or both).
     """
+
     # Lead broker service hostname or ip address
     lead_host: str
 
@@ -40,6 +41,9 @@ class BurstParameters:
 
     # Custom broker toml template for bursted cluster
     broker_toml: Optional[str] = None
+
+    # Require credentials from the environment
+    creds_from_environ: Optional[bool] = False
 
     # Name of a secret to be made in the same namespace
     munge_secret_name: Optional[str] = "munge-key"
@@ -100,10 +104,11 @@ class FluxBurstEKS(plugins.BurstPlugin):
         assign clusters, but run should actually create/destroy.
         """
         # We cannot run any jobs without credentials
-        for cred in ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY']:
-            if cred not in os.environ:
-                logger.warning(f"{cred} not found in environment, cannot schedule to EKS.")
-                return False
+        if self.params.creds_from_environ and not self.check_creds():
+            logger.warning(
+                f"AWS credentials not found in environment, cannot schedule to EKS."
+            )
+            return False
 
         # TODO determine if we can match some resource spec to another,
         # We likely want this class to be able to generate a lookup of
@@ -118,10 +123,26 @@ class FluxBurstEKS(plugins.BurstPlugin):
         self.jobs[job["id"]] = job
         return True
 
+    def check_creds(self):
+        """
+        Check that required credentials are in the environment.
+        """
+        for cred in ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"]:
+            if cred not in os.environ:
+                logger.warning(
+                    f"{cred} not found in environment, cannot schedule to EKS."
+                )
+                return False
+        return True
+
     def cleanup(self, name=None):
         """
         Cleanup (delete) one or more clusters
         """
+        print("CLEANUP")
+        import IPython
+
+        IPython.embed()
         if name and name not in self.clusters:
             raise ValueError(f"{name} is not a known cluster.")
         clusters = self.clusters if not name else {"name": self.clusters["name"]}
@@ -190,8 +211,9 @@ class FluxBurstEKS(plugins.BurstPlugin):
             max_nodes=max_size,
         )
 
-        print('CREATE CLUSTER!!')
+        print("CREATE CLUSTER!!")
         import IPython
+
         IPython.embed()
         # Create the cluster (this times it)
         try:
@@ -247,8 +269,9 @@ class FluxBurstEKS(plugins.BurstPlugin):
         """
         Create the MiniCluster
         """
-        print('CREATE MINICLUSTER')
+        print("CREATE MINICLUSTER")
         import IPython
+
         IPython.embed()
         command = " ".join(job["spec"]["tasks"][0]["command"])
         logger.info(f"Preparing MiniCluster for {job['id']}: {command}")
