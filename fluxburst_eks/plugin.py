@@ -170,9 +170,6 @@ class FluxBurstEKS(plugins.BurstPlugin):
         """
         Create the cluster and return a client handle to it.
         """
-        print('CREATE CLUSTER')
-        import IPython 
-        IPython.embed()
         cluster_name = self.params.cluster_name
         logger.info(f"📛️ Cluster name will be {cluster_name}")
 
@@ -184,7 +181,6 @@ class FluxBurstEKS(plugins.BurstPlugin):
 
         # Create a handle to the EKS cluster
         cli = EKSCluster(
-            project=self.params.project,
             name=cluster_name,
             node_count=max_size,
             # This is a default machine type, but should also be
@@ -194,12 +190,15 @@ class FluxBurstEKS(plugins.BurstPlugin):
             max_nodes=max_size,
         )
 
+        print('CREATE CLUSTER!!')
+        import IPython
+        IPython.embed()
         # Create the cluster (this times it)
         try:
             self.clusters[cluster_name] = cli.create_cluster()
         # We still need to register the cluster exists
         except Exception:
-            self.clusters[cluster_name] = cli.create_cluster()
+            self.clusters[cluster_name] = True
             print("🥵️ Issue creating cluster, assuming already exists.")
 
         # Create a client from it
