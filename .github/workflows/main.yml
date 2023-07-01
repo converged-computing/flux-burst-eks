@@ -1,4 +1,4 @@
-name: test cloud-select
+name: test flux-burst-eks
 
 on:
   pull_request: []
