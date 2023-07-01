@@ -125,19 +125,12 @@ class FluxBurstEKS(bases.KubernetesBurstPlugin):
         """
         Cleanup (delete) one or more clusters
         """
-        print("CLEANUP")
-        import IPython
-
-        IPython.embed()
         if name and name not in self.clusters:
             raise ValueError(f"{name} is not a known cluster.")
         clusters = self.clusters if not name else {"name": self.clusters["name"]}
         for cluster_name, _ in clusters.items():
-            logger.info("Cleaning up {cluster_name}")
-            cli = EKSCluster(
-                project=self.params.project,
-                name=cluster_name,
-            )
+            logger.info(f"Cleaning up {cluster_name}")
+            cli = EKSCluster(name=cluster_name)
             cli.delete_cluster()
 
         # Update known clusters
