@@ -23,20 +23,24 @@ class BurstParameters:
     environment (or both).
     """
 
+    # An isolated burst brings up an independent cluster
+    isolated_burst: Optional[bool] = False
+
     # Lead broker service hostname or ip address
-    lead_host: str
+    lead_host: Optional[str] = None
 
     # Lead broker service port (e.g, 30093)
-    lead_port: str
+    lead_port: Optional[str] = None
 
     # Lead broker size
-    lead_size: int
+    lead_size: Optional[str] = None
 
     # Custom broker toml template for bursted cluster
     broker_toml: Optional[str] = None
 
     # Require credentials from the environment
-    creds_from_environ: Optional[bool] = False
+    # This default to true because (I think) it's more common
+    creds_from_environ: Optional[bool] = True
 
     # Name of a secret to be made in the same namespace
     munge_secret_name: Optional[str] = "munge-key"
@@ -82,12 +86,12 @@ class FluxBurstEKS(bases.KubernetesBurstPlugin):
     # Set our custom dataclass, otherwise empty
     _param_dataclass = BurstParameters
 
-    def schedule(self, job):
+    def validate(self):
         """
-        Given a burstable job, determine if we can schedule it.
+        Validate ensures that required conditions are met.
 
-        This function should also consider logic for deciding if/when to
-        assign clusters, but run should actually create/destroy.
+        This should return True/False to indicate if valid or not, and
+        print meaninging error messages for the user
         """
         # We cannot run any jobs without credentials
         if self.params.creds_from_environ and not self.check_creds():
@@ -96,6 +100,16 @@ class FluxBurstEKS(bases.KubernetesBurstPlugin):
             )
             return False
 
+        # Shared validation functions from kubernetes
+        return super(FluxBurstEKS, self).validate()
+
+    def schedule(self, job):
+        """
+        Given a burstable job, determine if we can schedule it.
+
+        This function should also consider logic for deciding if/when to
+        assign clusters, but run should actually create/destroy.
+        """
         # TODO determine if we can match some resource spec to another,
         # We likely want this class to be able to generate a lookup of
         # instances / spec about them.
@@ -124,11 +138,14 @@ class FluxBurstEKS(bases.KubernetesBurstPlugin):
     def cleanup(self, name=None):
         """
         Cleanup (delete) one or more clusters
+
+        We are lenient in case that a cluster was created before, and
+        there isn't a record in self.clusters.
         """
         if name and name not in self.clusters:
-            raise ValueError(f"{name} is not a known cluster.")
-        clusters = self.clusters if not name else {"name": self.clusters["name"]}
-        for cluster_name, _ in clusters.items():
+            logger.warning(f"{name} is not a known cluster.")
+        clusters = list(self.clusters) if not name else [name]
+        for cluster_name in clusters:
             logger.info(f"Cleaning up {cluster_name}")
             cli = EKSCluster(name=cluster_name)
             cli.delete_cluster()
@@ -168,9 +185,9 @@ class FluxBurstEKS(bases.KubernetesBurstPlugin):
         try:
             self.clusters[cluster_name] = cli.create_cluster()
         # We still need to register the cluster exists
-        except Exception:
+        except Exception as exc:
             self.clusters[cluster_name] = True
-            print("🥵️ Issue creating cluster, assuming already exists.")
+            print(f"🥵️ Issue creating cluster, already exists?: {exc}")
 
         # Create a client from it
         logger.info(f"📦️ The cluster has {cli.node_count} nodes!")
